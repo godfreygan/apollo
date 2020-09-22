@@ -1,0 +1,14 @@
+
+.DS_Store
+composer.lock
+*.log
+.env
+.idea
+.vscode
+.buildpath
+.project
+.settings
+.env.st
+.env.example
+local.*
+http-client/*
