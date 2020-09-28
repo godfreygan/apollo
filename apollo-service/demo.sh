@@ -50,6 +50,8 @@ CLIENT_JAR=$CLIENT_DIR/apollo-demo.jar
 # go to script directory
 cd "${0%/*}"
 
+function version_lt() { test "$(echo "$@" | tr " " "\n" | sort -rV | head -n 1)" != "$1"; }
+
 function checkJava {
   if [[ -n "$JAVA_HOME" ]] && [[ -x "$JAVA_HOME/bin/java" ]];  then
       if [ "$windows" == "1" ]; then
@@ -67,7 +69,7 @@ function checkJava {
 
   if [[ "$_java" ]]; then
       version=$("$_java" -version 2>&1 | awk -F '"' '/version/ {print $2}')
-      if [[ "$version" < "1.8" ]]; then
+      if version_gt $version "1.8"; then
           echo "Java version is $version, please make sure java 1.8+ is in the path"
           exit 1
       fi
