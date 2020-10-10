@@ -94,11 +94,12 @@ class IndexController extends ApiBase {
             'app_id'         => ['required|string', '应用id'],
             'cluster_name'   => ['required|string', '集群名'],
             'namespace_name' => ['sometimes|string', 'namespace'],
+            'project_name'   => ['sometimes|string', '项目目录名称'],
         ];
         try {
             list($rules, $message) = ValidatorUtil::formatRule($rulesMap);
             $data = $this->validate(request()->getJson(), $rules, $message, TRUE, __METHOD__);
-            $ret = ApolloModule::apolloSync($data['env'], $data['app_id'], $data['cluster_name'], $data['namespace_name']);
+            $ret = ApolloModule::apolloSync($data['env'], $data['app_id'], $data['cluster_name'], $data['namespace_name'], $data['project_name']);
             return $this->responseSuccess(['message' => $ret ? '操作成功' : '操作失败'], __METHOD__);
         } catch (ServiceException $e) {
             $this->log(__METHOD__, $e->getCode(), $e->getMessage());

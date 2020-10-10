@@ -54,18 +54,20 @@ class Apollo extends Base
     /**
      * @title: 拉取apollo配置
      * @author: ganqixin <godfrey.gan@handeson.com>
-     * @param $env
-     * @param $appId
-     * @param $clusterName
+     * @param string $env
+     * @param string $appId
+     * @param string $clusterName
      * @param string $namespaceName
+     * @param string $projectName
      * @return bool
      */
-    public static function apolloSync($env, $appId, $clusterName, $namespaceName = 'application')
+    public static function apolloSync($env, $appId, $clusterName, $namespaceName = 'application', $projectName = '')
     {
         try{
             $data = self::getConfig($env, $appId, $clusterName, $namespaceName);
             $configData = self::formatConfigData($data);
-            $ret = self::saveEnv($configData, $appId, $clusterName);
+            $projectName = empty($projectName) ? $appId : $projectName;
+            $ret = self::saveEnv($configData, $projectName, $clusterName);
             if(empty($ret)){
                 return FALSE;
             }
@@ -112,35 +114,35 @@ class Apollo extends Base
      * @title: 保存.env文件
      * @author: ganqixin <godfrey.gan@handeson.com>
      * @param $data
-     * @param $app
+     * @param $projectName
      * @param $clusterName
      * @return bool|string
      */
-    private static function saveEnv($data, $app, $clusterName)
+    private static function saveEnv($data, $projectName, $clusterName)
     {
         $saveDir = rtrim(env("OUTPUT_APPLICATION_PATH"), '/');
 
-        if(env('APP_ENV') == 'dev') {
+        if(env('APP_ENV') == 'more-dev') {
             // 针对clusterName进行特殊分割
             $firstIndex = strpos($clusterName, '_');
             if($firstIndex === FALSE || $firstIndex == 0){
                 $developName = $clusterName;
-                $dir = $saveDir . DIRECTORY_SEPARATOR . $developName . DIRECTORY_SEPARATOR . $app . DIRECTORY_SEPARATOR;
+                $dir = $saveDir . DIRECTORY_SEPARATOR . $developName . DIRECTORY_SEPARATOR . $projectName . DIRECTORY_SEPARATOR;
             } else {
                 $developName = substr($clusterName, 0, $firstIndex);
                 $branchName = substr($clusterName, $firstIndex + 1);
-                $dir = $saveDir . DIRECTORY_SEPARATOR . $developName . DIRECTORY_SEPARATOR . $app . DIRECTORY_SEPARATOR . $branchName . DIRECTORY_SEPARATOR;
+                $dir = $saveDir . DIRECTORY_SEPARATOR . $developName . DIRECTORY_SEPARATOR . $projectName . DIRECTORY_SEPARATOR . $branchName . DIRECTORY_SEPARATOR;
             }
         } else {
-            $dir = $saveDir . DIRECTORY_SEPARATOR . $app . DIRECTORY_SEPARATOR;
+            $dir = $saveDir . DIRECTORY_SEPARATOR . $projectName . DIRECTORY_SEPARATOR;
         }
 
         // 判断path是否可写
         if (! is_dir($dir)) {
-            Log::error("目录不存在", [$app, $dir]);
+            Log::error("目录不存在", [$projectName, $dir]);
             return false;
         } elseif (! is_writable($dir)) {
-            Log::error("目录不可写", [$app, $dir]);
+            Log::error("目录不可写", [$projectName, $dir]);
             return false;
         }
         file_put_contents($dir . ".env", $data);

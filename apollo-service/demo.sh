@@ -69,7 +69,7 @@ function checkJava {
 
   if [[ "$_java" ]]; then
       version=$("$_java" -version 2>&1 | awk -F '"' '/version/ {print $2}')
-      if version_gt $version "1.8"; then
+      if version_lt $version "1.8"; then
           echo "Java version is $version, please make sure java 1.8+ is in the path"
           exit 1
       fi

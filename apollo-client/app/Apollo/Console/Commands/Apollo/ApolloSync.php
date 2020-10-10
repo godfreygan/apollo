@@ -16,7 +16,7 @@ class ApolloSync extends Command
 {
     /**
      * The console command name.
-     * php artisan apollo:apollo_sync --env=dev --app_id=order-service --cluster_name=ganqixin --namespace_name=application
+     * php artisan apollo:apollo_sync --env=dev --app_id=order-service --cluster_name=ganqixin --namespace_name=application --project_name=order-service
      * @var string
      */
     protected $name = 'apollo:apollo_sync';
@@ -35,6 +35,7 @@ class ApolloSync extends Command
             ['app_id', null, InputOption::VALUE_REQUIRED, '应用id', ''],
             ['cluster_name', null, InputOption::VALUE_REQUIRED, '集群名', ''],
             ['namespace_name', null, InputOption::VALUE_OPTIONAL, 'namespace', 'application'],
+            ['project_name', null, InputOption::VALUE_OPTIONAL, '项目目录名称', ''],      // 可选，order-service 或 order-service/master
         ];
     }
 
@@ -59,9 +60,10 @@ class ApolloSync extends Command
         $appId         = $this->option('app_id');
         $clusterName   = $this->option('cluster_name');
         $namespaceName = empty($this->option('namespace_name')) ? 'application' : $this->option('namespace_name');
+        $projectName   = empty($this->option('project_name'));
 
         try{
-            $ret = Apollo::apolloSync($env, $appId, $clusterName, $namespaceName);
+            $ret = Apollo::apolloSync($env, $appId, $clusterName, $namespaceName, $projectName);
             if(! $ret){
                 // todo 失败处理
             }
