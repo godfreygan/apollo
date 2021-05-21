@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # apollo config db info
-apollo_config_db_url=jdbc:mysql://localhost:3306/ApolloConfigDB?characterEncoding=utf8
+apollo_config_db_url="jdbc:mysql://localhost:3306/ApolloConfigDB?characterEncoding=utf8&serverTimezone=Asia/Shanghai"
 apollo_config_db_username=root
 apollo_config_db_password=root
 
 # apollo portal db info
-apollo_portal_db_url=jdbc:mysql://localhost:3306/ApolloPortalDB?characterEncoding=utf8
+apollo_portal_db_url="jdbc:mysql://localhost:3306/ApolloPortalDB?characterEncoding=utf8&serverTimezone=Asia/Shanghai"
 apollo_portal_db_username=root
 apollo_portal_db_password=root
 
@@ -32,7 +32,7 @@ portal_url=http://localhost:8070
 BASE_JAVA_OPTS="-Denv=dev"
 CLIENT_JAVA_OPTS="$BASE_JAVA_OPTS -Dapollo.meta=$config_server_url"
 SERVER_JAVA_OPTS="$BASE_JAVA_OPTS -Dspring.profiles.active=github -Deureka.service.url=$eureka_service_url"
-PORTAL_JAVA_OPTS="$BASE_JAVA_OPTS -Ddev_meta=$config_server_url -Dspring.profiles.active=github,auth -Deureka.client.enabled=false"
+PORTAL_JAVA_OPTS="$BASE_JAVA_OPTS -Ddev_meta=$config_server_url -Dspring.profiles.active=github,auth -Deureka.client.enabled=false -Dhibernate.query.plan_cache_max_size=192"
 
 # executable
 JAR_FILE=apollo-all-in-one.jar
@@ -50,13 +50,11 @@ CLIENT_JAR=$CLIENT_DIR/apollo-demo.jar
 # go to script directory
 cd "${0%/*}"
 
-function version_lt() { test "$(echo "$@" | tr " " "\n" | sort -rV | head -n 1)" != "$1"; }
-
 function checkJava {
   if [[ -n "$JAVA_HOME" ]] && [[ -x "$JAVA_HOME/bin/java" ]];  then
       if [ "$windows" == "1" ]; then
         tmp_java_home=`cygpath -sw "$JAVA_HOME"`
-        export JAVA_HOME=`cygpath -u $tmp_java_home`
+        export JAVA_HOME=`cygpath -u "$tmp_java_home"`
         echo "Windows new JAVA_HOME is: $JAVA_HOME"
       fi
       _java="$JAVA_HOME/bin/java"
@@ -69,7 +67,7 @@ function checkJava {
 
   if [[ "$_java" ]]; then
       version=$("$_java" -version 2>&1 | awk -F '"' '/version/ {print $2}')
-      if version_lt $version "1.8"; then
+      if [[ "$version" < "1.8" ]]; then
           echo "Java version is $version, please make sure java 1.8+ is in the path"
           exit 1
       fi
@@ -105,7 +103,8 @@ checkJava
 if [ "$1" = "start" ] ; then
   echo "==== starting service ===="
   echo "Service logging file is $SERVICE_LOG"
-  export JAVA_OPTS="$SERVER_JAVA_OPTS -Dlogging.file=./apollo-service.log -Dspring.datasource.url=$apollo_config_db_url -Dspring.datasource.username=$apollo_config_db_username -Dspring.datasource.password=$apollo_config_db_password"
+  export APP_NAME="apollo-service"
+  export JAVA_OPTS="$SERVER_JAVA_OPTS -Dlogging.file.name=./apollo-service.log -Dspring.datasource.url=$apollo_config_db_url -Dspring.datasource.username=$apollo_config_db_username -Dspring.datasource.password=$apollo_config_db_password"
 
   if [[ -f $SERVICE_JAR ]]; then
     rm -rf $SERVICE_JAR
@@ -149,7 +148,8 @@ if [ "$1" = "start" ] ; then
 
   echo "==== starting portal ===="
   echo "Portal logging file is $PORTAL_LOG"
-  export JAVA_OPTS="$PORTAL_JAVA_OPTS -Dlogging.file=./apollo-portal.log -Dserver.port=8070 -Dspring.datasource.url=$apollo_portal_db_url -Dspring.datasource.username=$apollo_portal_db_username -Dspring.datasource.password=$apollo_portal_db_password"
+  export APP_NAME="apollo-portal"
+  export JAVA_OPTS="$PORTAL_JAVA_OPTS -Dlogging.file.name=./apollo-portal.log -Dserver.port=8070 -Dspring.datasource.url=$apollo_portal_db_url -Dspring.datasource.username=$apollo_portal_db_username -Dspring.datasource.password=$apollo_portal_db_password"
 
   if [[ -f $PORTAL_JAR ]]; then
     rm -rf $PORTAL_JAR
@@ -189,12 +189,14 @@ elif [ "$1" = "client" ] ; then
 
 elif [ "$1" = "stop" ] ; then
   echo "==== stopping portal ===="
+  export APP_NAME="apollo-portal"
   cd $PORTAL_DIR
   ./$PORTAL_JAR_NAME stop
 
   cd ..
 
   echo "==== stopping service ===="
+  export APP_NAME="apollo-service"
   cd $SERVICE_DIR
   ./$SERVICE_JAR_NAME stop
 
